@@ -451,44 +451,43 @@ var onSearch = function(callback) {
 
 var onSearchBtnClicked = function() {
     onSearch(function(files) {
-            document.querySelector("#file-preview").innerHTML = '';
-            var ol = document.createElement('ol');
-            ol.id = 'selectable';
-            // console.log(files);
-            // console.log(Object.keys(files));
-            console.log(files);
-            if (!!Object.keys(files).length) {
-                for (var filid in files) {
-                    if (files.hasOwnProperty(filid)) {
-                        var file = files[filid];
-                        file.fid = filid;
-                        var li = document.createElement('li');
-                        console.log('search ' + filid);
-                        // console.log(tt.length);
-                        if (file.isFont) {
-                            var fontFace = document.createElement('style');
-                            fontFace.appendChild(document.createTextNode(hf.getNewFontFaceHTML(file)));
-                            document.head.appendChild(fontFace);
-                            // div.innerHTML = hf.getFontThumbnailPreview(file);
-                            li.innerHTML = hf.getFontThumbnailPreview(file);
-                        } else {
-                            // div.innerHTML = hf.getImageThumbnailPreview(file);
-                            li.innerHTML = hf.getImageThumbnailPreview(file);
-                            t.getThumbnailImgSrc(file, function(tt) {
-                                console.log('search files');
-                                console.log(file);
-                                li.querySelector('img').src = tt;
-                            });
-                        }
-                        console.log('src ' + filid);
+        document.querySelector("#file-preview").innerHTML = '';
+        var ol = document.createElement('ol');
+        ol.id = 'selectable';
+        // console.log(files);
+        // console.log(Object.keys(files));
+        console.log(files);
+        if (!!Object.keys(files).length) {
+            for (var filid in files) {
+                if (files.hasOwnProperty(filid)) {
+                    var file = files[filid];
+                    file.fid = filid;
+                    var li = document.createElement('li');
+                    console.log('search ' + filid);
+                    // console.log(tt.length);
+                    if (file.isFont) {
+                        var fontFace = document.createElement('style');
+                        fontFace.appendChild(document.createTextNode(hf.getNewFontFaceHTML(file)));
+                        document.head.appendChild(fontFace);
+                        // div.innerHTML = hf.getFontThumbnailPreview(file);
+                        li.innerHTML = hf.getFontThumbnailPreview(file);
+                    } else {
+                        // div.innerHTML = hf.getImageThumbnailPreview(file);
+                        li.innerHTML = hf.getImageThumbnailPreview(file);
+                        t.getThumbnailImgSrc(file, function(tt) {
+                            console.log('search files');
+                            console.log(file);
+                            li.querySelector('img').src = tt;
+                        });
                     }
-                    li.querySelector('.open-file').addEventListener('click', function() {
-                        file.open();
-                    });
-                    // div.className = 'ui-state-default';
-                    li.className = 'ui-state-default';
-                    ol.appendChild(li);
+                    console.log('src ' + filid);
                 }
+                li.querySelector('.open-file').addEventListener('click', function() {
+                    file.open();
+                });
+                // div.className = 'ui-state-default';
+                li.className = 'ui-state-default';
+                ol.appendChild(li);
             }
             document.querySelector("#file-preview").appendChild(ol);
             hf.showTags(files, onRemoveTagFromAFile);
@@ -503,7 +502,7 @@ var onSearchBtnClicked = function() {
                 }
             });
         } else {
-            document.querySelector('#file-preview').innerHTML = '<div id="no-results"><h2>No results for "' + document.querySelector('#input-search').value + '"</h2></p>'
+            document.querySelector('#file-preview').innerHTML = '<div id="no-results"><h2>No results for "' + document.querySelector('#input-search').value + '"</h2></p>';
         }
     });
 }
