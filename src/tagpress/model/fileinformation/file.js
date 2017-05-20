@@ -82,11 +82,40 @@ export class File {
         return global.defaultFileThumb;
     }
 
+    getImgSrcUrl() {
+        try {
+            var imgExtensions = ["jpg", "JPG", "jpeg", "png", "gif"];
+            var fontExtensions = ["ttf", "ttc", "otf"];
+            var audioExtensions = ["mp3"];
+            var fileSplit = this.name.split(".");
+            if (fileSplit.length > 0) {
+                var ext = fileSplit[fileSplit.length - 1]
+                if (imgExtensions.indexOf(ext) >= 0) {
+                    return this.path;
+                }
+                if (audioExtensions.indexOf(ext) >= 0) {
+                    var audioThumbnail;
+                    mm(fs.createReadStream('/media/isura/2030CA7330CA5008/demo/songs/01-bruno_mars-24k_magic.mp3'), function(err, metadata) {
+                        if (err) throw err;
+                        audioThumbnail = 'data:image/jpg;base64,' + metadata.picture[0].data.toString('base64');
+                        // console.log(metadata.picture[0].data.toString('base64'));
+                    });
+                    return audioThumbnail;
+                    // return global.defaultMP3Thumb;
+                }
+                this.isFont = (fontExtensions.indexOf(ext) >= 0);
+            }
+        } catch (err) {
+            return global.defaultFileThumb;
+        }
+        return global.defaultFileThumb;
+    }
+
     /**
      * open file using xdg-open: linux
      */
     open() {
-        var command = 'xdg-open ' + path.resolve(file.path)
+        var command = 'xdg-open ' + path.resolve(this.path)
             .replace(/ /g, '\\ ')
             .replace(/'/g, "\\'")
             .replace(/"/g, '\\"');
