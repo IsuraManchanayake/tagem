@@ -2,6 +2,7 @@ import { global } from '../../global/global'
 import path from 'path'
 import interact from 'interact.js'
 import 'jquery-ui-bundle';
+import * as thumbnail from '../../model/corefunctionhandler/thumbnail'
 
 /**
  * return a folder html to #file-nav
@@ -47,8 +48,11 @@ export const getFontThumbnailPreview = (fontFile) => {
  */
 export const getImageThumbnailPreview = (file) => {
     // console.log(file);
-    return '<div class="gallery droppable" data-filid="' + file.fid + '" data-filepath="' + file.path + '"><img src="' +
-        'file://' + path.resolve(file.thumbnail) +
+    // console.log(path.resolve(file.path));
+    return '<div class="gallery droppable" data-filid="' + file.fid + '" data-filepath="' + file.path + '"><img id="img-' + file.fid + '" src="' +
+        // 'file://' + path.resolve(file.thumbnail) +
+        // thumbnail.getThumbnailImgSrc(file) +
+        '' +
         '"><div class="desc"><p title="open file" class="file-name open-file">' +
         file.name +
         '</p><div id="file-id-' + file.fid + '" data-filid="' + file.fid + '" class="tags"></div></div></div>';
