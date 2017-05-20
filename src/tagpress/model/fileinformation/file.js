@@ -118,7 +118,9 @@ export class File {
         var command = 'xdg-open ' + path.resolve(this.path)
             .replace(/ /g, '\\ ')
             .replace(/'/g, "\\'")
-            .replace(/"/g, '\\"');
+            .replace(/"/g, '\\"')
+            .replace(/\(/g, '\\(')
+            .replace(/\)/g, '\\)');
         console.log(command);
         exec(command);
     }
