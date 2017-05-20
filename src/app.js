@@ -29,6 +29,7 @@ import { FileGrouper } from './tagpress/model/corefunctionhandler/filegrouper'
 import { global } from './tagpress/global/global'
 import * as filequery from './tagpress/data/filequery'
 import * as hf from './tagpress/view/js/htmlfactory'
+import * as t from './tagpress/model/corefunctionhandler/thumbnail';
 
 // var lista = listAllFiles(new Folder('src/tagpress/test/example/'))
 
@@ -116,6 +117,11 @@ var showFiles = function(folder) {
                     } else {
                         // div.innerHTML = hf.getImageThumbnailPreview(file);
                         li.innerHTML = hf.getImageThumbnailPreview(file);
+                        t.getThumbnailImgSrc(file, function(tt) {
+                            console.log('folder preview');
+                            console.log(file);
+                            li.querySelector('img').src = tt;
+                        });
                     }
                     li.querySelector('.open-file').addEventListener('click', function() {
                         file.open();
@@ -445,26 +451,36 @@ var onSearch = function(callback) {
 
 var onSearchBtnClicked = function() {
     onSearch(function(files) {
-        document.querySelector("#file-preview").innerHTML = '';
-        var ol = document.createElement('ol');
-        ol.id = 'selectable';
-        // console.log(files);
-        // console.log(Object.keys(files));
-        if (!!Object.keys(files).length) {
-            for (var filid in files) {
-                if (files.hasOwnProperty(filid)) {
-                    var file = files[filid];
-                    file.fid = filid;
-                    var li = document.createElement('li');
-                    if (file.isFont) {
-                        var fontFace = document.createElement('style');
-                        fontFace.appendChild(document.createTextNode(hf.getNewFontFaceHTML(file)));
-                        document.head.appendChild(fontFace);
-                        // div.innerHTML = hf.getFontThumbnailPreview(file);
-                        li.innerHTML = hf.getFontThumbnailPreview(file);
-                    } else {
-                        // div.innerHTML = hf.getImageThumbnailPreview(file);
-                        li.innerHTML = hf.getImageThumbnailPreview(file);
+            document.querySelector("#file-preview").innerHTML = '';
+            var ol = document.createElement('ol');
+            ol.id = 'selectable';
+            // console.log(files);
+            // console.log(Object.keys(files));
+            console.log(files);
+            if (!!Object.keys(files).length) {
+                for (var filid in files) {
+                    if (files.hasOwnProperty(filid)) {
+                        var file = files[filid];
+                        file.fid = filid;
+                        var li = document.createElement('li');
+                        console.log('search ' + filid);
+                        // console.log(tt.length);
+                        if (file.isFont) {
+                            var fontFace = document.createElement('style');
+                            fontFace.appendChild(document.createTextNode(hf.getNewFontFaceHTML(file)));
+                            document.head.appendChild(fontFace);
+                            // div.innerHTML = hf.getFontThumbnailPreview(file);
+                            li.innerHTML = hf.getFontThumbnailPreview(file);
+                        } else {
+                            // div.innerHTML = hf.getImageThumbnailPreview(file);
+                            li.innerHTML = hf.getImageThumbnailPreview(file);
+                            t.getThumbnailImgSrc(file, function(tt) {
+                                console.log('search files');
+                                console.log(file);
+                                li.querySelector('img').src = tt;
+                            });
+                        }
+                        console.log('src ' + filid);
                     }
                     li.querySelector('.open-file').addEventListener('click', function() {
                         file.open();
@@ -536,3 +552,10 @@ document.querySelector("#input-search").addEventListener('keydown', function(e) 
 // var tags = [new Tag('abc', new Category('def', 'ghi'), "1"), new Tag('jkl', new Category('mno', 'pqr'), "2")];
 // var fg = new FileGrouper(files, tags, '/media/isura/2030CA7330CA5008/shiki/da/');
 // fg.copyFiles();
+
+import mm from 'musicmetadata';
+
+var parser = mm(fs.createReadStream('/media/isura/2030CA7330CA5008/demo/songs/01-bruno_mars-24k_magic.mp3'), function(err, metadata) {
+    if (err) throw err;
+    // console.log(metadata.picture[0].data.toString('base64'));
+});
