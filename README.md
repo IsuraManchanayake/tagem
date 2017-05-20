@@ -36,6 +36,8 @@ Task list for 2.0.0
 - [ ] Add folder search
 - [ ] Fix search by name bug (only tagged files are searched for name)
 - [ ] Add less resolution image thumbnail preview
+- [x] Add album art thumbnail for mp3 files
+- [ ] Add thumbnail for video files 
 - [ ] Add remove tag option
 - [ ] Add remove category option
 - [ ] Add remove folder option
