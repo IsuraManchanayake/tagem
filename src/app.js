@@ -20,7 +20,7 @@ var a = new ProvidePlugin({
 import 'jquery-ui-bundle'
 
 // import { listAllFiles } from './tagpress/model/tagpressfilehandler/validator'
-import { Folder } from './tagpress/model/fileinformation/folder'
+import { Folder, listAllFolders } from './tagpress/model/fileinformation/folder'
 import { File } from './tagpress/model/fileinformation/file'
 import { Tag } from './tagpress/model/fileinformation/tag'
 import { Category } from './tagpress/model/fileinformation/category'
@@ -50,6 +50,7 @@ const osMap = {
 
 var currentFolder;
 var targetFolderPath = '/home/isura';
+var selectedFiles = [];
 
 var allFolder = { path: "", name: ".." };
 var div = document.createElement('div');
@@ -62,23 +63,14 @@ div.addEventListener('click', function() {
 });
 document.querySelector("#file-nav").appendChild(div);
 
-filequery.listAllIndexedFolders(function(err, rows) {
-    if (err) {
-        console.error(err);
-    } else {
-        rows.forEach(function(row) {
-            var folder = new Folder(row.fpath);
-            folder.folid = row.folid;
-            var div = document.createElement('div');
-            div.innerHTML = hf.getFileNavigationFolderHTML(folder);
-            div.addEventListener('click', function() {
-                currentFolder = folder;
-                showFiles(folder);
-                document.querySelector('#file-preview').setAttribute('data-current-folder', folder.folid);
-            });
-            document.querySelector("#file-nav").appendChild(div);
+listAllFolders(function(folder) {
+    hf.showFolder(folder, function(folder) {
+        currentFolder = folder;
+        folder.listAllFiles(function() {
+            hf.showFiles(folder.files, selectedFiles, onRemoveTagFromAFile);
         });
-    }
+        // showFiles(folder);
+    });
 });
 
 var showAllFiles = function() {
@@ -89,8 +81,10 @@ var onRemoveTagFromAFile = function(filid, tname, cname, callback) {
     filequery.removeTagFromFile(filid, tname, cname, callback);
 }
 
-var selectedFiles = [];
-
+/**
+ * @deprecated
+ * @param {Folder} folder 
+ */
 var showFiles = function(folder) {
     // console.log(folder);
     var ul = document.createElement('ul');
@@ -157,6 +151,7 @@ var showFiles = function(folder) {
     });
 }
 
+
 var onNewTagEnterKey = function(inputText, categoryName, categoryColor) {
     filequery.insertNewTag(categoryName, inputText, function(err) {
         if (err && err.message.startsWith('ER_DUP_ENTRY')) {
@@ -168,24 +163,7 @@ var onNewTagEnterKey = function(inputText, categoryName, categoryColor) {
 }
 
 var onAddNewTag = function(category) {
-    console.log('sdfsdf');
-    console.log(category);
-    hf.showInputNewTag(category).addEventListener('keydown', function(e) {
-        if (e.keyCode == 13) { // Enter key
-            onNewTagEnterKey(this.value, category.name, category.color);
-            this.remove();
-            hf.showAddNewTagIcon(category).addEventListener('click', function() {
-                onAddNewTag(category);
-            });
-        } else if (e.keyCode == 27) { // Escape key
-            this.remove();
-            hf.showAddNewTagIcon(category).addEventListener('click', function() {
-                onAddNewTag(category);
-            });
-        } else if (e.keyCode == 32) { // Space key
-            e.preventDefault();
-        }
-    });
+    hf.showInputNewTag(category, onAddNewTag, onNewTagEnterKey);
 }
 
 var onCreateNewCategory = function(categoryName, categoryColor) {
@@ -203,24 +181,26 @@ var onAddNewCategoryBtnClicked = function() {
     hf.showInputNewCategory(onCreateNewCategory);
 }
 
-var onRemoveTag = function(category, tag) {
-        filequery.checkTagAvailabilityBeforeRemoveTag(category, tag, function(err, avail) {
+var onRemoveTag = function(categoryName, tagName) {
+        filequery.checkTagAvailabilityBeforeRemoveTag(categoryName, tagName, function(err, avail) {
             if (!err) {
                 if (avail) {
-                    var ans = confirm('The tag: ' + tag + '(' + category + ') has been tagged by some of ' +
+                    var ans = confirm('The tag: ' + tagName + '(' + categoryName + ') has been tagged by some of ' +
                         'files. Do you want to remove the tag? (The tag of those files will be automatically removed)');
                     if (ans) {
-                        filequery.removeTag(category, tag, function(err) {
-                            document.querySelector('#tagkbd-' + category + '-' + tag).remove();
-                            showFiles(currentFolder);
+                        filequery.removeTag(categoryName, tagName, function(err) {
+                            hf.removeTagKbd(categoryName, tagName);
+                            // document.querySelector('#tagkbd-' + categoryName + '-' + tagName).remove();
+                            // showFiles(currentFolder);
                         });
                     }
                 } else {
-                    var ans = confirm('The tag: ' + tag + '(' + category + ') is not tagged by any of ' +
+                    var ans = confirm('The tag: ' + tagName + '(' + categoryName + ') is not tagged by any of ' +
                         'files. Do you want to remove the tag?');
                     if (ans) {
-                        filequery.removeTag(category, tag, function(err) {
-                            document.querySelector('#tagkbd-' + category + '-' + tag).remove();
+                        filequery.removeTag(categoryName, tagName, function(err) {
+                            hf.removeTagKbd(categoryName, tagName)
+                                // document.querySelector('#tagkbd-' + categoryName + '-' + tagName).remove();
                         });
                     }
                 }
@@ -262,6 +242,10 @@ filequery.getAllTags(function(tagrows) {
 document.querySelector('#tag-inventory').style.overflowY = "scroll";
 
 var onTag = function(filid, cname, tname, successCallback, errCallback, doAtEnd) {
+    var selectedFiles = [];
+    [...document.querySelectorAll('.ui-selected')].forEach(function(selected) {
+        selectedFiles.push(selected.getAttribute('data-filid'));
+    });
     if (selectedFiles.length == 0) {
         filequery.tagFile(filid, cname, tname, successCallback, errCallback);
         doAtEnd();
