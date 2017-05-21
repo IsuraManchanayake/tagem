@@ -11,10 +11,26 @@ import asyncLoop from 'node-async-loop'
  */
 export const listAllIndexedFolders = (callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select * from indexedfolders', function(err, rows) {
-        dbconnect.con.end();
+    dbconnect.query('select * from indexedfolders', function(err, rows) {
+        dbconnect.end();
         callback(err, rows);
     });
+}
+
+/**
+ * list all the files with file name, file id, tag id, tag name, category name, and category color.
+ * if no tags contained in the file, a row of file created with null tag and category entries.
+ * @param {Number} folderid
+ * @param {Function} callback(err, ar) 
+ */
+export const listAllFilesInsideFolder = (folderid, callback) => {
+    var dbconnect = new DBConnect();
+    dbconnect.query('select filename, indexedfiles.filid, tag.tid, tag.tname, cname, color from indexedfiles left outer join filetag on indexedfiles.filid=filetag.filid left outer join tag' +
+        ' on filetag.tid=tag.tid left outer join category on tag.cid=category.cid where folid=' + folderid,
+        function(err, rows) {
+            dbconnect.end();
+            callback(err, rows);
+        });
 }
 
 /**
@@ -23,11 +39,12 @@ export const listAllIndexedFolders = (callback) => {
  * @param {Function} callback(err, rows)
  *      err: {Error}
  *      rows: {RawDataPacket[]}
+ * @deprecated
  */
 export const getIndexedFilesInsideFolder = (folderid, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select * from indexedfiles where folid=' + folderid, function(err, rows) {
-        dbconnect.con.end();
+    dbconnect.query('select * from indexedfiles where folid=' + folderid, function(err, rows) {
+        dbconnect.end();
         callback(err, rows);
     });
 }
@@ -40,14 +57,14 @@ export const getIndexedFilesInsideFolder = (folderid, callback) => {
  */
 export const getAllTagsInTheFolder = (folderid, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select * from indexedfiles where folid=' + folderid, function(err, rows) {
+    dbconnect.query('select * from indexedfiles where folid=' + folderid, function(err, rows) {
         if (err) {
             throw err;
         }
         var ar = [];
         if (!!rows.length) {
             asyncLoop(rows, function(row, next) {
-                dbconnect.con.query('select filetag.filid, filetag.tid, tag.tname, category.cname, category.color ' +
+                dbconnect.query('select filetag.filid, filetag.tid, tag.tname, category.cname, category.color ' +
                     'from filetag, tag, category where filetag.filid=' + row.filid + ' and filetag.tid=tag.tid' +
                     ' and category.cid=tag.cid',
                     function(tagerr, tagrows) {
@@ -59,11 +76,11 @@ export const getAllTagsInTheFolder = (folderid, callback) => {
                         next();
                     });
             }, function() {
-                dbconnect.con.end();
+                dbconnect.end();
                 callback(ar);
             });
         } else {
-            dbconnect.con.end();
+            dbconnect.end();
             callback(ar);
         }
     });
@@ -76,10 +93,10 @@ export const getAllTagsInTheFolder = (folderid, callback) => {
  */
 export const getAllTags = (callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select tid, tname, cname, color from tag left outer join category on tag.cid=' +
+    dbconnect.query('select tid, tname, cname, color from tag left outer join category on tag.cid=' +
         'category.cid',
         function(err, rows) {
-            dbconnect.con.end();
+            dbconnect.end();
             if (err) {
                 throw err;
             }
@@ -94,11 +111,11 @@ export const getAllTags = (callback) => {
  */
 export const getEmptyCategories = (callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select cname, color from (select count(tid) as cnt, category.cname as cname,' +
+    dbconnect.query('select cname, color from (select count(tid) as cnt, category.cname as cname,' +
         ' category.color as color  from category left outer join tag  on tag.cid=category.cid group by category.cid)' +
         ' as p where cnt=0',
         function(err, rows) {
-            dbconnect.con.end();
+            dbconnect.end();
             if (err) {
                 throw err;
             }
@@ -116,15 +133,15 @@ export const getEmptyCategories = (callback) => {
 export const insertNewTag = (categoryName, tagName, callback) => {
     var dbconnect = new DBConnect();
     // console.log('select cid from category where cname="' + categoryName + '"');
-    dbconnect.con.query('select cid from category where cname="' + categoryName + '"', function(err, rows) {
-        dbconnect.con.end();
+    dbconnect.query('select cid from category where cname="' + categoryName + '"', function(err, rows) {
+        dbconnect.end();
         if (err) {
             callback(err);
         }
         var cid = rows[0].cid;
         var idbconnect = new DBConnect();
-        idbconnect.con.query('insert into tag(cid, tname) values (' + cid + ', "' + tagName + '")', function(ierr) {
-            idbconnect.con.end();
+        idbconnect.query('insert into tag(cid, tname) values (' + cid + ', "' + tagName + '")', function(ierr) {
+            idbconnect.end();
             if (ierr) {
                 callback(ierr);
             } else {
@@ -143,8 +160,8 @@ export const insertNewTag = (categoryName, tagName, callback) => {
  */
 export const insertCategory = (categoryName, categoryColor, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('insert into category(cname, color) values ("' + categoryName + '", "' + categoryColor + '")', function(err) {
-        dbconnect.con.end();
+    dbconnect.query('insert into category(cname, color) values ("' + categoryName + '", "' + categoryColor + '")', function(err) {
+        dbconnect.end();
         if (err) {
             callback(err);
         } else {
@@ -162,12 +179,12 @@ export const insertCategory = (categoryName, categoryColor, callback) => {
  */
 export const removeTag = (categoryName, tagName, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('delete from tag where tid in (select * from (select tag.tid from' +
+    dbconnect.query('delete from tag where tid in (select * from (select tag.tid from' +
         ' tag left outer join category on tag.cid=category.cid where' +
         ' tag.tname="' + tagName +
         '" and category.cname="' + categoryName + '") as p)',
         function(err) {
-            dbconnect.con.end();
+            dbconnect.end();
             if (err) {
                 callback(err);
             } else {
@@ -186,12 +203,12 @@ export const removeTag = (categoryName, tagName, callback) => {
  */
 export const checkTagAvailabilityBeforeRemoveTag = (categoryName, tagName, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select filetag.filid from filetag where tid=(select tag.tid from' +
+    dbconnect.query('select filetag.filid from filetag where tid=(select tag.tid from' +
         ' tag left outer join category on tag.cid=category.cid where' +
         ' tag.tname="' + tagName +
         '" and category.cname="' + categoryName + '")',
         function(err, rows) {
-            dbconnect.con.end();
+            dbconnect.end();
             if (err) {
                 callback(err);
             } else if (rows.length > 0) {
@@ -213,16 +230,16 @@ export const checkTagAvailabilityBeforeRemoveTag = (categoryName, tagName, callb
  */
 export const tagFile = (filid, cname, tname, successCallback, errCallback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('select tid from tag, category where tag.cid=category.cid and tag.tname="' +
+    dbconnect.query('select tid from tag, category where tag.cid=category.cid and tag.tname="' +
         tname + '" and category.cname="' + cname + '"',
         function(err, rows) {
             if (err) {
-                dbconnect.con.end();
+                dbconnect.end();
                 errCallback();
             } else {
                 var tid = rows[0].tid;
-                dbconnect.con.query('insert into filetag(filid, tid) values (' + filid + ', ' + tid + ')', function(err) {
-                    dbconnect.con.end();
+                dbconnect.query('insert into filetag(filid, tid) values (' + filid + ', ' + tid + ')', function(err) {
+                    dbconnect.end();
                     if (err) {
                         errCallback();
                     } else {
@@ -242,12 +259,12 @@ export const tagFile = (filid, cname, tname, successCallback, errCallback) => {
  */
 export const removeTagFromFile = (filid, tname, cname, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('delete from filetag where filid=' + filid + ' and tid in (select * from (select tag.tid from' +
+    dbconnect.query('delete from filetag where filid=' + filid + ' and tid in (select * from (select tag.tid from' +
         ' tag left outer join category on tag.cid=category.cid where' +
         ' tag.tname="' + tname +
         '" and category.cname="' + cname + '") as p)',
         function(err) {
-            dbconnect.con.end();
+            dbconnect.end();
             if (err) {
 
             } else {
@@ -263,11 +280,11 @@ export const removeTagFromFile = (filid, tname, cname, callback) => {
  */
 export const importFolder = (fpath, callback) => {
     var dbconnect = new DBConnect();
-    dbconnect.con.query('insert into indexedfolders(fpath) values ("' + fpath + '/")', function(err) {
+    dbconnect.query('insert into indexedfolders(fpath) values ("' + fpath + '/")', function(err) {
         var e = err;
-        dbconnect.con.query('select max(folid) as folid from indexedfolders', function(_err, rows) {
+        dbconnect.query('select max(folid) as folid from indexedfolders', function(_err, rows) {
             if (_err) {} {
-                dbconnect.con.end();
+                dbconnect.end();
                 // console.log(rows[0]);
                 // console.log(rows[0].folid);
                 callback(e || _err, rows[0].folid);
@@ -286,8 +303,8 @@ export const importFile = (folid, filename, callback) => {
     var dbconnect = new DBConnect();
     // console.log(folid + ' ' + filename);
     // console.log('insert into indexedfiles(folid, filename) values (' + folid + ', "' + filename + '")');
-    dbconnect.con.query('insert into indexedfiles(folid, filename) values (' + folid + ', "' + filename + '")', function(err) {
-        dbconnect.con.end();
+    dbconnect.query('insert into indexedfiles(folid, filename) values (' + folid + ', "' + filename + '")', function(err) {
+        dbconnect.end();
         if (err) {} else {
             callback();
         }
