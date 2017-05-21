@@ -33,4 +33,12 @@ export class DBConnect {
         // return _instance;
     }
 
+    query(sql, callback) {
+        this.con.query(sql, callback);
+    }
+
+    end() {
+        this.con.end();
+    }
+
 }
