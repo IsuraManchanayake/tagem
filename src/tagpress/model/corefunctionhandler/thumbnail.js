@@ -23,7 +23,7 @@ export const getThumbnailImgSrc = (file, callback) => {
                         console.log(err);
                         throw err;
                     }
-                    if (metadata.picture[0].data) {
+                    if (metadata.picture[0]) {
                         audioThumbnail = 'data:image/jpg;base64,' + metadata.picture[0].data.toString('base64');
                     }
                     // return callback()
