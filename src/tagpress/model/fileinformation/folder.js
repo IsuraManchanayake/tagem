@@ -1,4 +1,9 @@
 import { global } from '../../global/global'
+import * as filequery from '../../data/filequery'
+import { File } from './file'
+import { Tag } from './tag'
+import { Category } from './category'
+import asyncLoop from 'node-async-loop'
 
 export class Folder {
     /**
@@ -75,6 +80,51 @@ export class Folder {
         file.addTag(tag)
         this.files.push(file)
     }
+
+    /**
+     * list all files in the folder
+     * @param {Function} callback
+     */
+    listAllFiles(callback) {
+        var self = this;
+        filequery.listAllFilesInsideFolder(this.folid, function(err, rows) {
+            if (err) {
+                console.log(err);
+            } else {
+                asyncLoop(rows, function(row, next) {
+                    var filid = row.filid;
+                    console.log(filid);
+                    if (filid in self.files) {} else {
+                        self.files[filid] = new File(self.path + row.filename);
+                    }
+                    if (row.tid) {
+                        self.files[filid].tags.push(new Tag(row.tname, new Category(row.cname, row.color), row.tid));
+                    }
+                    next();
+                }, function() {
+                    callback();
+                })
+            }
+        })
+    }
+
+
 }
 
-// module.exports = Folder
+/**
+ * list all indexed folders in the database
+ * @param {Function} callback(folder)
+ */
+export const listAllFolders = (callback) => {
+    filequery.listAllIndexedFolders(function(err, rows) {
+        if (err) {
+            console.error(err);
+        } else {
+            rows.forEach(function(row) {
+                var folder = new Folder(row.fpath);
+                folder.folid = row.folid;
+                callback(folder);
+            });
+        }
+    });
+}
