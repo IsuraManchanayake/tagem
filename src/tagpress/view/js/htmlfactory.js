@@ -4,9 +4,165 @@ import interact from 'interact.js'
 import 'jquery-ui-bundle';
 import * as thumbnail from '../../model/corefunctionhandler/thumbnail'
 
+
+/**
+ * shows folder in the #file-nav div
+ * @param {Folder} folder 
+ * @param {Function} onClick(folder) 
+ */
+export const showFolder = (folder, onClick) => {
+    var p_foldername = document.createElement('p');
+    p_foldername.innerHTML = folder.name;
+    p_foldername.className = 'folder-name';
+
+    var p_folderpath = document.createElement('p');
+    p_folderpath.innerHTML = folder.path;
+    p_folderpath.className = 'folder-path';
+
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'folder';
+    button.appendChild(p_foldername);
+    button.appendChild(p_folderpath);
+
+    button.addEventListener('click', function() {
+        // var animation = document.createElement('object');
+        // animation.type = 'text/html';
+        // animation.data = './loadingp5js.html';
+        // document.querySelector('#file-preview').innerHTML = '';
+        // document.querySelector('#file-preview').appendChild(animation);
+        document.querySelector('#file-nav').setAttribute('data-current-folder', folder.folid);
+        onClick(folder);
+    });
+
+    document.querySelector('#file-nav').appendChild(button);
+}
+
+/**
+ * show a list of files in #file-preview div
+ * @param {File[]} files 
+ */
+export const showFiles = (files, selectedFiles, onRemoveTagFromAFile) => {
+    document.querySelector('#file-preview').innerHTML = '';
+    var ol = document.createElement('ol');
+    ol.className = 'selectable';
+    for (var filid in files) {
+        if (files.hasOwnProperty(filid)) {
+            let file = files[filid];
+            file.fid = filid;
+            let li = document.createElement('li');
+            if (file.isFont) {
+                var fontFace = document.createElement('style');
+                fontFace.appendChild(document.createTextNode(getNewFontFaceHTML(file)));
+                document.head.appendChild(fontFace);
+                li.appendChild(getFontThumbnail(file));
+            } else {
+                li.appendChild(getImageThumbnail(file));
+                thumbnail.getThumbnailImgSrc(file, function(tt) {
+                    li.querySelector('img').src = tt;
+                });
+            }
+            li.querySelector('.open-file').addEventListener('click', function() {
+                file.open();
+            });
+            li.className = 'ui-state-default';
+            ol.appendChild(li);
+        }
+    }
+    document.querySelector('#file-preview').appendChild(ol);
+    showTags(files, onRemoveTagFromAFile);
+    $('.selectable').selectable({
+        filter: '.gallery'
+            // selected: function() {
+            // selectedFiles = [];
+            // $('.ui-selected', this).each(function() {
+            // selectedFiles.push(this.getAttribute('data-filid'));
+            // });
+            // console.log(selectedFiles);
+            // }
+    });
+}
+
+/**
+ * @returns HTML div object with thumbnail for a font file
+ * @param {File} file 
+ */
+export const getFontThumbnail = (fontFile) => {
+    var fontFaceName = fontFile.name.substr(0, fontFile.name.lastIndexOf('.')) || fontFile.name;
+    var gallerydiv = document.createElement('div');
+    gallerydiv.className = 'gallery droppable';
+    gallerydiv.setAttribute('data-filid', fontFile.fid);
+    var previewp = document.createElement('p');
+    previewp.className = 'font-preview-line';
+    previewp.innerHTML = global.defaultFontPreviewLine;
+    previewp.style.fontFamily = fontFaceName;
+    gallerydiv.appendChild(previewp);
+    var descdiv = document.createElement('div');
+    descdiv.className = 'desc';
+    var openfilep = document.createElement('p');
+    openfilep.title = 'open file';
+    openfilep.className = 'file-name open-file';
+    openfilep.innerHTML = fontFile.name;
+    descdiv.appendChild(openfilep);
+    var tagsdiv = document.createElement('div');
+    tagsdiv.className = 'tags';
+    tagsdiv.id = 'file-id-' + fontFile.fid;
+    tagsdiv.setAttribute('data-filid', fontFile.fid);
+    descdiv.appendChild(tagsdiv);
+    gallerydiv.appendChild(descdiv);
+    openfilep.addEventListener('click', function() {
+        fontFile.open();
+    });
+    return gallerydiv;
+
+    // return document.createTextNode('<div class="gallery droppable" data-filid="' + fontFile.fid + '" data-filepath="' + fontFile.path + '"><p style="font-family: ' + fontFaceName + '; font-size: 30px; ' +
+    //     'text-align: center; padding: 15px;">' +
+    //     global.defaultFontPreviewLine + '</p><div class="desc"><p title="open file" class="file-name open-file">' +
+    //     fontFile.name +
+    //     '</p><div id="file-id-' + fontFile.fid + '" data-filid="' + fontFile.fid + '" class="tags"></div></div></div>');
+}
+
+/**
+ * @returns HTML div object with thumbnail for an image thumbnail file
+ * @param {File} file 
+ */
+export const getImageThumbnail = (file) => {
+    var gallerydiv = document.createElement('div');
+    gallerydiv.className = 'gallery droppable';
+    gallerydiv.setAttribute('data-filid', file.fid);
+    var image = document.createElement('img');
+    image.id = 'img-' + file.fid;
+    gallerydiv.appendChild(image);
+    var descdiv = document.createElement('div');
+    descdiv.className = 'desc';
+    var openfilep = document.createElement('p');
+    openfilep.title = 'open file';
+    openfilep.className = 'file-name open-file';
+    openfilep.innerHTML = file.name;
+    descdiv.appendChild(openfilep);
+    var tagsdiv = document.createElement('div');
+    tagsdiv.className = 'tags';
+    tagsdiv.id = 'file-id-' + file.fid;
+    tagsdiv.setAttribute('data-filid', file.fid);
+    descdiv.appendChild(tagsdiv);
+    gallerydiv.appendChild(descdiv);
+    openfilep.addEventListener('click', function() {
+        file.open();
+    });
+    return gallerydiv;
+    // return document.createTextNode('<div class="gallery droppable" data-filid="' + file.fid + '" data-filepath="' + file.path + '"><img id="img-' + file.fid + '" src="' +
+    //     // 'file://' + path.resolve(file.thumbnail) +
+    //     // thumbnail.getThumbnailImgSrc(file) +
+    //     '' +
+    //     '"><div class="desc"><p title="open file" class="file-name open-file">' +
+    //     file.name +
+    //     '</p><div id="file-id-' + file.fid + '" data-filid="' + file.fid + '" class="tags"></div></div></div>');
+}
+
 /**
  * return a folder html to #file-nav
- * @param {Folder} folder 
+ * @deprecated 
+ * @param {Folder} folder
  */
 export const getFileNavigationFolderHTML = (folder) => {
     return '<button type="button" class="folder"><p class="folder-name">' +
@@ -313,7 +469,7 @@ export const showNewCategory = (categoryName, categoryColor, onAddNewTag) => {
  * show new tag input tag inside a given category
  * @param {Category} category 
  */
-export const showInputNewTag = (category) => {
+export const showInputNewTag = (category, onAddNewTag, onNewTagEnterKey) => {
     console.log(category);
     var plusIcon = document.querySelector('#add-newtag-kbd-' + category.name);
     console.log('#category-name-' + category.name);
@@ -328,7 +484,28 @@ export const showInputNewTag = (category) => {
     newTag.maxLength = global.tagMaxLength;
     categoryDiv.insertBefore(newTag, document.querySelector('#category-clearfix-' + category.name));
     newTag.focus();
-    return newTag;
+
+    newTag.addEventListener('keydown', function(e) {
+        if (e.keyCode == 13) { // enter key
+            onNewTagEnterKey(this.value, category.name, category.color);
+            this.remove();
+            showAddNewTagIcon(category, onAddNewTag);
+        } else if (e.keyCode == 27) { // escape key
+            this.remove();
+            showAddNewTagIcon(category, onAddNewTag);
+        } else if (e.keyCode == 32) { // space key
+            e.preventDefault();
+        }
+    });
+}
+
+/**
+ * remove tag kbd from tag-inventory
+ * @param {String} categoryName 
+ * @param {String} tagName 
+ */
+export const removeTagKbd = (categoryName, tagName) => {
+    document.querySelector('#tagkbd-' + categoryName + '-' + tagName).remove();
 }
 
 /**
@@ -348,6 +525,9 @@ export const showAddNewTagIcon = (category, onAddNewTag) => {
     addnewTag.setAttribute('data-category-name', category.name);
     var categoryDiv = document.querySelector('#category-div-' + category.name);
     categoryDiv.insertBefore(addnewTag, categoryDiv.lastChild);
+    addnewTag.addEventListener('click', function() {
+        onAddNewTag(category);
+    })
     return addnewTag;
 }
 
